@@ -34,14 +34,15 @@ app.use("/api/companies", companyRoutes);
 // Connect DB & Start Server
 const PORT = process.env.PORT || 5000;
 
-
-  connectDB().then(() => {
-    console.log("✅ MongoDB connected");
+connectDB()
+  .then(() => {
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log("[Server] Listening on port", PORT);
+      console.log("[Server] Environment: NODE_ENV=" + (process.env.NODE_ENV || "development"));
+      console.log("[Server] CORS origin:", process.env.FRONTEND_URL || "http://localhost:5173");
     });
   })
   .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1); // agar DB connect nahi hua toh app band kar do
+    console.error("[Server] MongoDB connection failed:", err.message);
+    process.exit(1);
   });

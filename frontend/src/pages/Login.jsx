@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { api, setToken } from "../api";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Briefcase, Target, Users } from "lucide-react";
 import { authStore } from "../auth";
-// const [showPassword, setShowPassword] = useState(false);
+import Spinner from "../components/Spinner.jsx";
 
+const authInputCls =
+  "w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-white placeholder-white/50 outline-none focus:border-white/40 focus:ring-2 focus:ring-white/20 focus-visible:outline-none";
 
 export default function AuthPage({ defaultTab = "login" }) {
   const [tab, setTab] = useState(defaultTab); // "login" | "signup" | "forgot"
@@ -12,7 +14,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-
+  const [loading, setLoading] = useState(false);
 
   // states
   const [email, setEmail] = useState("");
@@ -26,6 +28,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setMsg("");
+    setLoading(true);
     try {
       const res = await api("/api/auth/login", {
         method: "POST",
@@ -37,6 +40,8 @@ export default function AuthPage({ defaultTab = "login" }) {
       window.location.href = res.redirect;
     } catch (err) {
       setMsg(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,6 +49,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const handleSignupRequestOtp = async (e) => {
     e.preventDefault();
     setMsg("");
+    setLoading(true);
     try {
       await api("/api/auth/signup/request-otp", {
         method: "POST",
@@ -54,6 +60,8 @@ export default function AuthPage({ defaultTab = "login" }) {
       setMsg("✅ OTP sent to your email");
     } catch (err) {
       setMsg(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,6 +69,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const handleSignupVerifyOtp = async (e) => {
     e.preventDefault();
     setMsg("");
+    setLoading(true);
     try {
       await api("/api/auth/signup/verify-otp", {
         method: "POST",
@@ -72,6 +81,8 @@ export default function AuthPage({ defaultTab = "login" }) {
       setSignupStep("form");
     } catch (err) {
       setMsg(err.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,6 +90,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const handleForgotRequestOtp = async (e) => {
     e.preventDefault();
     setMsg("");
+    setLoading(true);
     try {
       await api("/api/auth/forgot/request-otp", {
         method: "POST",
@@ -89,6 +101,8 @@ export default function AuthPage({ defaultTab = "login" }) {
       setMsg("✅ OTP sent to your email");
     } catch (err) {
       setMsg(err.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,6 +110,7 @@ export default function AuthPage({ defaultTab = "login" }) {
   const handleForgotReset = async (e) => {
     e.preventDefault();
     setMsg("");
+    setLoading(true);
     try {
       await api("/api/auth/forgot/reset", {
         method: "POST",
@@ -107,6 +122,8 @@ export default function AuthPage({ defaultTab = "login" }) {
       setForgotStep("form");
     } catch (err) {
       setMsg(err.message || "Password reset failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -126,33 +143,30 @@ export default function AuthPage({ defaultTab = "login" }) {
             {tab === "forgot" && "Enter your email to reset your password"}
           </p>
 
-          {/* Tabs */}
-          <div className="flex gap-2 sm:gap-3 mb-6">
+          {/* Tabs: segmented control */}
+          <div className="inline-flex bg-white/10 p-1 rounded-2xl mb-6">
             <button
-              className={`px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold ${
-                tab === "login"
-                  ? "bg-white text-indigo-700"
-                  : "bg-white/20 text-white"
+              type="button"
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                tab === "login" ? "bg-white text-indigo-700 shadow" : "text-white/90 hover:text-white"
               }`}
               onClick={() => setTab("login")}
             >
               Login
             </button>
             <button
-              className={`px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold ${
-                tab === "signup"
-                  ? "bg-white text-indigo-700"
-                  : "bg-white/20 text-white"
+              type="button"
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                tab === "signup" ? "bg-white text-indigo-700 shadow" : "text-white/90 hover:text-white"
               }`}
               onClick={() => setTab("signup")}
             >
               Signup
             </button>
             <button
-              className={`px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold ${
-                tab === "forgot"
-                  ? "bg-white text-indigo-700"
-                  : "bg-white/20 text-white"
+              type="button"
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
+                tab === "forgot" ? "bg-white text-indigo-700 shadow" : "text-white/90 hover:text-white"
               }`}
               onClick={() => setTab("forgot")}
             >
@@ -169,7 +183,7 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
               <div className="relative">
                 <input
@@ -178,32 +192,40 @@ export default function AuthPage({ defaultTab = "login" }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input bg-white/20 text-white placeholder-gray-300 pr-10"
+                  className={`${authInputCls} pr-10`}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
                   onClick={() => setShowLoginPassword(!showLoginPassword)}
+                  aria-label={showLoginPassword ? "Hide password" : "Show password"}
                 >
                   {showLoginPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
 
-
               <div className="flex justify-between items-center text-xs sm:text-sm text-gray-200">
-                <label>
-                  <input type="checkbox" className="mr-1" /> Keep me logged in
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-white/40 bg-white/10 text-indigo-600 focus:ring-white/30"
+                  />
+                  Keep me logged in
                 </label>
                 <button
                   type="button"
                   onClick={() => setTab("forgot")}
-                  className="hover:underline"
+                  className="hover:underline text-white/90"
                 >
                   Forgot password?
                 </button>
               </div>
-              <button className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition">
-                Sign in
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner size={22} className="text-white" /> : "Sign in"}
               </button>
             </form>
           )}
@@ -217,7 +239,7 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
               <input
                 type="email"
@@ -225,7 +247,7 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
               <div className="relative">
                 <input
@@ -234,21 +256,23 @@ export default function AuthPage({ defaultTab = "login" }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input bg-white/20 text-white placeholder-gray-300 pr-10"
+                  className={`${authInputCls} pr-10`}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
                   onClick={() => setShowSignupPassword(!showSignupPassword)}
+                  aria-label={showSignupPassword ? "Hide password" : "Show password"}
                 >
                   {showSignupPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-
-
-
-              <button className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition">
-                Request OTP
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner size={22} className="text-white" /> : "Request OTP"}
               </button>
             </form>
           )}
@@ -261,10 +285,14 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
-              <button className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition">
-                Verify & Signup
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner size={22} className="text-white" /> : "Verify & Signup"}
               </button>
             </form>
           )}
@@ -278,10 +306,14 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
-              <button className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition">
-                Request OTP
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner size={22} className="text-white" /> : "Request OTP"}
               </button>
             </form>
           )}
@@ -294,7 +326,7 @@ export default function AuthPage({ defaultTab = "login" }) {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 required
-                className="input bg-white/20 text-white placeholder-gray-300"
+                className={authInputCls}
               />
               <div className="relative">
                 <input
@@ -303,20 +335,23 @@ export default function AuthPage({ defaultTab = "login" }) {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  className="input bg-white/20 text-white placeholder-gray-300 pr-10"
+                  className={`${authInputCls} pr-10`}
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
                   onClick={() => setShowForgotPassword(!showForgotPassword)}
+                  aria-label={showForgotPassword ? "Hide password" : "Show password"}
                 >
                   {showForgotPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
-
-
-              <button className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition">
-                Reset Password
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 text-white font-bold shadow-lg hover:opacity-90 transition disabled:opacity-70 flex items-center justify-center gap-2"
+              >
+                {loading ? <Spinner size={22} className="text-white" /> : "Reset Password"}
               </button>
             </form>
           )}
@@ -333,17 +368,17 @@ export default function AuthPage({ defaultTab = "login" }) {
               placements, interviews, and company rounds
             </span>
             . Organize your progress, compare with peers, and prepare smarter.
-            Trusted by students from top institutes 🚀
+            Trusted by students from top institutes.
           </p>
-          <div className="space-x-2">
-            <span className="inline-block bg-pink-500 px-3 py-1 rounded-full text-sm">
-              Track companies
+          <div className="flex flex-wrap gap-3 text-white/90">
+            <span className="inline-flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl text-sm">
+              <Briefcase className="h-4 w-4 shrink-0" /> Track companies
             </span>
-            <span className="inline-block bg-purple-500 px-3 py-1 rounded-full text-sm">
-              Prepare smart
+            <span className="inline-flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl text-sm">
+              <Target className="h-4 w-4 shrink-0" /> Prepare smart
             </span>
-            <span className="inline-block bg-indigo-500 px-3 py-1 rounded-full text-sm">
-              Get placed
+            <span className="inline-flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl text-sm">
+              <Users className="h-4 w-4 shrink-0" /> Get placed
             </span>
           </div>
         </div>

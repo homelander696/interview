@@ -8,6 +8,15 @@ html, body, #root { height: 100%; }
   body { @apply font-sans bg-gradient-to-br from-sky-50 via-indigo-50 to-fuchsia-50 text-slate-800; }
 }
 
+/* focus ring for accessibility */
+.focus-ring { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2; }
+/* page enter animation */
+.page-enter { animation: fade-in 0.3s ease-out forwards; }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* popover animation */
 @keyframes pop {
   0% { transform: translateY(6px) scale(.98); opacity: 0; }
@@ -25,11 +34,11 @@ html, body, #root { height: 100%; }
   .card-toned-hover { @apply transition hover:-translate-y-[1px] hover:ring-brand-200/80 hover:shadow-soft; }
 
   .btn         { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-medium transition shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed; }
-  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700; }
+  .btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700 hover:shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98]; }
   .btn-outline { @apply btn border border-slate-300 bg-white hover:bg-slate-50; }
   .btn-ghost   { @apply btn bg-transparent hover:bg-white/60; }
 
-  .input       { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200; }
+  .input       { @apply w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-0; }
   .pill        { @apply inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600; }
 
   .hero-title  { @apply text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900; }

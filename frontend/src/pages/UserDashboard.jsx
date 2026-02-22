@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Search, Inbox, FileQuestion } from 'lucide-react';
 import Navbar from '../components/Navbar.jsx';
+import Spinner from '../components/Spinner.jsx';
+import EmptyState from '../components/EmptyState.jsx';
 import { api } from '../api';
 import { authStore } from '../auth';
 
@@ -20,18 +23,22 @@ export default function UserDashboard(){
     setTab(t === 'mine' ? 'mine' : 'browse');
   }, [searchParams]);
 
-  useEffect(() => { loadBrowse(); loadMine(); }, []); // initial
+  useEffect(() => { loadBrowse(); loadMine(); }, []); // eslint-disable-line react-hooks/exhaustive-deps -- initial load only
 
-  const loadBrowse = async () => {
+  const loadBrowse = useCallback(async () => {
     setLoading(true);
     try { setBrowse(await api(`/api/companies?search=${encodeURIComponent(qBrowse)}`)); }
+    catch { setBrowse([]); }
     finally { setLoading(false); }
-  };
-  const loadMine = async () => {
+  }, [qBrowse]);
+  const loadMine = useCallback(async () => {
     setLoading(true);
     try { setMine(await api(`/api/companies/mine?search=${encodeURIComponent(qMine)}`)); }
+    catch { setMine([]); }
     finally { setLoading(false); }
-  };
+  }, [qMine]);
+  const onBrowseKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); loadBrowse(); } };
+  const onMineKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); loadMine(); } };
 
   const pill = (s) =>
     s==='approved' ? 'pill bg-green-100 text-green-700' :
@@ -40,13 +47,20 @@ export default function UserDashboard(){
 
   const roundsPreview = (c) => Array.isArray(c.rounds) ? c.rounds.slice(0,2) : [];
 
+  const borderAccent = (status) => {
+    if (status === 'approved') return 'border-l-4 border-l-green-500';
+    if (status === 'pending') return 'border-l-4 border-l-yellow-500';
+    if (status === 'rejected') return 'border-l-4 border-l-red-500';
+    return '';
+  };
+
   const CompanyCard = ({ c, showStatus=false }) => {
     const last = Array.isArray(c.rounds) && c.rounds.length ? c.rounds[c.rounds.length - 1] : null;
     const lastLabel = (last?.result || 'pending');
 
     return (
       <li className="group relative">
-        <div className="relative card-toned card-toned-hover p-6 md:p-7 min-h-[140px] cursor-pointer">
+        <div className={`relative card-toned card-toned-hover p-6 md:p-7 min-h-[140px] cursor-pointer ${showStatus ? borderAccent(c.status) : ''}`}>
           <Link to={`/company/${c._id}`} aria-label={`Open ${c.name}`} className="absolute inset-0 z-10 rounded-2xl" />
 
           <div className="flex items-start justify-between">
@@ -118,53 +132,99 @@ export default function UserDashboard(){
 
         {/* Explore (approved) */}
         {tab==='browse' && (
-          <section className="space-y-4">
+          <section className="space-y-4 page-enter">
             <div className="card p-4">
               <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="Search approved interview experiences (e.g., TCS, SDE-1, 2024)"
-                  value={qBrowse}
-                  onChange={e=>setQBrowse(e.target.value)}
-                />
-                <button onClick={loadBrowse} className="btn-outline">Search</button>
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" aria-hidden />
+                  <input
+                    className="input pl-10"
+                    placeholder="Search approved interview experiences (e.g., TCS, SDE-1, 2024)"
+                    value={qBrowse}
+                    onChange={e=>setQBrowse(e.target.value)}
+                    onKeyDown={onBrowseKeyDown}
+                  />
+                </div>
+                <button onClick={loadBrowse} disabled={loading} className="btn-outline focus-ring">
+                  {loading ? <Spinner size={20} /> : 'Search'}
+                </button>
               </div>
             </div>
 
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {browse.length === 0 && !loading && (
-                <li className="col-span-full card p-6 text-center text-slate-500">
-                  No approved experiences yet. Try another search or check back soon.
-                </li>
-              )}
-              {browse.map(c => <CompanyCard key={c._id} c={c} showStatus={false} />)}
-            </ul>
+            {loading && browse.length === 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="card-toned p-6 rounded-2xl animate-pulse">
+                    <div className="h-5 bg-slate-200 rounded w-2/3" />
+                    <div className="mt-2 h-4 bg-slate-100 rounded w-1/2" />
+                    <div className="mt-4 h-6 bg-slate-100 rounded-full w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {browse.length === 0 && (
+                  <li className="col-span-full">
+                    <EmptyState
+                      icon={FileQuestion}
+                      title="No approved experiences yet"
+                      description="Try another search or check back soon. Approved submissions from the community will appear here."
+                    />
+                  </li>
+                )}
+                {browse.map(c => <CompanyCard key={c._id} c={c} showStatus={false} />)}
+              </ul>
+            )}
           </section>
         )}
 
         {/* My Submissions */}
         {tab==='mine' && (
-          <section className="space-y-4">
+          <section className="space-y-4 page-enter">
             <div className="card p-4">
               <div className="flex gap-2">
-                <input
-                  className="input"
-                  placeholder="Search your submissions (company, role, year…)"
-                  value={qMine}
-                  onChange={e=>setQMine(e.target.value)}
-                />
-                <button onClick={loadMine} className="btn-outline">Filter</button>
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 pointer-events-none" aria-hidden />
+                  <input
+                    className="input pl-10"
+                    placeholder="Search your submissions (company, role, year…)"
+                    value={qMine}
+                    onChange={e=>setQMine(e.target.value)}
+                    onKeyDown={onMineKeyDown}
+                  />
+                </div>
+                <button onClick={loadMine} disabled={loading} className="btn-outline focus-ring">
+                  {loading ? <Spinner size={20} /> : 'Filter'}
+                </button>
               </div>
             </div>
 
-            <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mine.length === 0 && !loading && (
-                <li className="col-span-full card p-6 text-center text-slate-500">
-                  You haven’t shared an experience yet. Use <b>Add Experience</b> to post yours — admins review before it goes live.
-                </li>
-              )}
-              {mine.map(c => <CompanyCard key={c._id} c={c} showStatus={true} />)}
-            </ul>
+            {loading && mine.length === 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1,2,3].map(i => (
+                  <div key={i} className="card-toned p-6 rounded-2xl animate-pulse">
+                    <div className="h-5 bg-slate-200 rounded w-2/3" />
+                    <div className="mt-2 h-4 bg-slate-100 rounded w-1/2" />
+                    <div className="mt-4 h-6 bg-slate-100 rounded-full w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mine.length === 0 && (
+                  <li className="col-span-full">
+                    <EmptyState
+                      icon={Inbox}
+                      title="No submissions yet"
+                      description="You haven’t shared an experience yet. Add one and admins will review it before it goes live."
+                      ctaLabel="Add Experience"
+                      ctaTo="/add-experience"
+                    />
+                  </li>
+                )}
+                {mine.map(c => <CompanyCard key={c._id} c={c} showStatus={true} />)}
+              </ul>
+            )}
           </section>
         )}
       </main>

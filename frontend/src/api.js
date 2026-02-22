@@ -18,7 +18,7 @@ export async function api(path, { method='GET', body, auth=true } = {}) {
   });
   if (!res.ok) {
     let msg = res.statusText;
-    try { const j = await res.json(); msg = j.msg || j.error || msg; } catch {}
+    try { const j = await res.json(); msg = j.msg || j.error || msg; } catch { /* use res.statusText */ }
     throw new Error(msg);
   }
   return res.json();
